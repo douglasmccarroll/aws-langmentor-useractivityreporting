@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS SAM Template for LangCollab User Activity Reporting
+Globals:
+  Function:
+    Timeout: 10
+Outputs:
+  ReportUserActivityApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/report_user_activity/
+  ReportUserActivityFunction:
+    Description: ReportUserActivityFunction ARN
+    Value:
+      Fn::GetAtt:
+      - ReportUserActivityFunction
+      - Arn
+  ReportUserActivityFunctionIamRole:
+    Description: Implicit IAM Role created for ReportUserActivityFunction
+    Value:
+      Fn::GetAtt:
+      - ReportUserActivityFunctionRole
+      - Arn
+Resources:
+  ReportUserActivityFunction:
+    Properties:
+      CodeUri: s3://com.langcollab.play-002.langmentor-app-sam/29b544bba8edf468860a8d974b339196
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: UserActivityTable
+      Events:
+        ReportUserActivity:
+          Properties:
+            Method: post
+            Path: /report_user_activity
+          Type: Api
+      Handler: app.lambda_handler
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserActivityTable
+      Runtime: python3.7
+    Type: AWS::Serverless::Function
+  UserActivityTable:
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: activityId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: activityId
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: user-activities
+    Type: AWS::DynamoDB::Table
+Transform: AWS::Serverless-2016-10-31

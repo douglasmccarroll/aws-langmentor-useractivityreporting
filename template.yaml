@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM Template for LangCollab User Activity Reporting
+
+Globals:
+  Function:
+    Timeout: 10
+
+Resources:
+  ReportUserActivityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: report_user_activity/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserActivityTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserActivityTable
+      Events:
+        ReportUserActivity:
+          Type: Api
+          Properties:
+            Path: /report_user_activity
+            Method: post
+  UserActivityTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: user-activities
+      AttributeDefinitions:
+        - AttributeName: activityId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: activityId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+Outputs:
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
+  #   The optional Outputs section declares output values that you can import into other stacks to create cross-stack references
+  #   https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-importvalue.html
+  #   https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/walkthrough-crossstackref.html
+  ReportUserActivityApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/report_user_activity/"
+  ReportUserActivityFunction:
+    Description: "ReportUserActivityFunction ARN"
+    Value: !GetAtt ReportUserActivityFunction.Arn
+  ReportUserActivityFunctionIamRole:
+    Description: "Implicit IAM Role created for ReportUserActivityFunction"
+    Value: !GetAtt ReportUserActivityFunctionRole.Arn
